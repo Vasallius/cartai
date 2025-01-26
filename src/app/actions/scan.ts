@@ -7,32 +7,35 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function scanPrice(base64Image: string): Promise<ScanResult> {
+export async function scanPrice(
+  priceImage: string,
+  productImage: string
+): Promise<ScanResult> {
   try {
-    if (!base64Image) {
-      throw new Error("No image provided");
+    if (!priceImage || !productImage) {
+      throw new Error("Missing images");
     }
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4-vision-preview",
       messages: [
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Analyze this image and provide two pieces of information:
-              1. The price: Extract any visible price with PHP (Philippine Peso) as default currency.
-              2. Product identification: If you can see a barcode or product details, briefly describe what the product is.
-              
-              Respond in this exact format:
-              PRICE: [the price or "No price found"]
-              PRODUCT: [product description or "No product identified"]`,
+              text: "I will show you two images. The first is of a price tag, and the second is of the product itself. Please provide:\n1. The price from the first image\n2. A brief description of the product from the second image\n\nRespond in this exact format:\nPRICE: [the price or 'No price found']\nPRODUCT: [product description or 'No product identified']",
             },
             {
               type: "image_url",
               image_url: {
-                url: base64Image,
+                url: priceImage,
+              },
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: productImage,
               },
             },
           ],
