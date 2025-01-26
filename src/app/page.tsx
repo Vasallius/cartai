@@ -6,6 +6,7 @@ import { scanPrice } from "./actions/scan";
 
 export default function Home() {
   const [price, setPrice] = useState<string | null>(null);
+  const [product, setProduct] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -25,8 +26,9 @@ export default function Home() {
 
       if (result.error) {
         setError(result.error);
-      } else if (result.price) {
+      } else {
         setPrice(result.price);
+        setProduct(result.product || null);
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : "Scanning failed");
@@ -37,31 +39,77 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      <h1 className="text-2xl font-bold mb-8">Cart AI Scanner</h1>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900">Cart AI Scanner</h1>
+          <p className="mt-2 text-gray-600">
+            Point camera at price tag or barcode
+          </p>
+        </div>
 
-      <div className="w-full max-w-md aspect-square relative bg-gray-100 rounded-lg overflow-hidden">
-        <Webcam
-          ref={webcamRef}
-          className="w-full h-full object-cover"
-          screenshotFormat="image/jpeg"
-          mirrored={false}
-        />
+        <div className="aspect-square relative bg-white rounded-2xl overflow-hidden shadow-lg">
+          <Webcam
+            ref={webcamRef}
+            className="w-full h-full object-cover"
+            screenshotFormat="image/jpeg"
+            mirrored={false}
+          />
+        </div>
+
+        <div className="space-y-4">
+          <button
+            onClick={handleScan}
+            disabled={isScanning}
+            className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+          >
+            {isScanning ? (
+              <span className="flex items-center justify-center">
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Scanning...
+              </span>
+            ) : (
+              "Scan Item"
+            )}
+          </button>
+
+          {error && (
+            <div className="p-3 text-sm text-red-600 bg-red-50 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          {(price || product) && (
+            <div className="bg-white p-4 rounded-xl shadow-md space-y-2">
+              {price && (
+                <div className="text-2xl font-mono font-bold text-gray-900">
+                  {price}
+                </div>
+              )}
+              {product && <div className="text-gray-600">{product}</div>}
+            </div>
+          )}
+        </div>
       </div>
-
-      <button
-        onClick={handleScan}
-        disabled={isScanning}
-        className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-full font-semibold disabled:opacity-50"
-      >
-        {isScanning ? "Scanning..." : "Scan Price"}
-      </button>
-
-      {error && <div className="mt-4 text-red-600 text-sm">{error}</div>}
-
-      {price && (
-        <div className="mt-6 text-xl font-mono">Detected Price: {price}</div>
-      )}
     </div>
   );
 }

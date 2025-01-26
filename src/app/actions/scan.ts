@@ -14,14 +14,20 @@ export async function scanPrice(base64Image: string): Promise<ScanResult> {
     }
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4-vision-preview",
       messages: [
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "Please look at this image and extract only the price. Return ONLY the price in the format '$X.XX'. If no clear price is visible, return 'No price found'.",
+              text: `Analyze this image and provide two pieces of information:
+              1. The price: Extract any visible price, including currency symbol if shown. Format should be natural (e.g., £4.99, €10.50, 1200¥).
+              2. Product identification: If you can see a barcode or product details, briefly describe what the product is.
+              
+              Respond in this exact format:
+              PRICE: [the price or "No price found"]
+              PRODUCT: [product description or "No product identified"]`,
             },
             {
               type: "image_url",
@@ -32,16 +38,25 @@ export async function scanPrice(base64Image: string): Promise<ScanResult> {
           ],
         },
       ],
-      max_tokens: 50,
+      max_tokens: 150,
     });
 
-    const result = response.choices[0]?.message?.content || "No price found";
-    return { price: result };
+    const result = response.choices[0]?.message?.content || "";
+
+    // Parse the response
+    const priceMatch = result.match(/PRICE: (.*)/);
+    const productMatch = result.match(/PRODUCT: (.*)/);
+
+    return {
+      price: priceMatch ? priceMatch[1].trim() : null,
+      product: productMatch ? productMatch[1].trim() : null,
+    };
   } catch (error) {
     console.error("Scan error:", error);
     return {
       price: null,
-      error: error instanceof Error ? error.message : "Failed to scan price",
+      product: null,
+      error: error instanceof Error ? error.message : "Failed to scan",
     };
   }
 }
