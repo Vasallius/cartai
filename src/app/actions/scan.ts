@@ -22,7 +22,7 @@ export async function scanPrice(base64Image: string): Promise<ScanResult> {
             {
               type: "text",
               text: `Analyze this image and provide two pieces of information:
-              1. The price: Extract any visible price, including currency symbol if shown. Format should be natural (e.g., £4.99, €10.50, 1200¥).
+              1. The price: Extract any visible price with PHP (Philippine Peso) as default currency.
               2. Product identification: If you can see a barcode or product details, briefly describe what the product is.
               
               Respond in this exact format:

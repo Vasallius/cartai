@@ -1,22 +1,58 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { BrowserMultiFormatReader } from "@zxing/browser";
+import { useCallback, useRef, useState } from "react";
 import Webcam from "react-webcam";
 import { scanPrice } from "./actions/scan";
 
 export default function Home() {
   const [price, setPrice] = useState<string | null>(null);
   const [product, setProduct] = useState<string | null>(null);
+  const [barcode, setBarcode] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const webcamRef = useRef<any>(null);
+  const codeReader = useRef<BrowserMultiFormatReader | null>(null);
+
+  // Initialize barcode reader
+  const initBarcodeReader = useCallback(async () => {
+    if (!codeReader.current) {
+      codeReader.current = new BrowserMultiFormatReader();
+    }
+  }, []);
+
+  // Scan for barcodes
+  const scanBarcode = async () => {
+    if (!webcamRef.current) return null;
+
+    try {
+      await initBarcodeReader();
+      const videoElement = webcamRef.current.video;
+      const result = await codeReader.current?.decodeOnceFromVideoElement(
+        videoElement
+      );
+      return result?.getText() || null;
+    } catch (error) {
+      console.error("Barcode scan failed:", error);
+      return null;
+    }
+  };
 
   const handleScan = async () => {
     setIsScanning(true);
     setError(null);
 
     try {
+      // First try to scan barcode
+      const barcodeResult = await scanBarcode();
+      if (barcodeResult) {
+        setBarcode(barcodeResult);
+        // Here you could add an API call to look up product details by barcode
+        setProduct(`Barcode: ${barcodeResult}`);
+      }
+
+      // Then scan for price using GPT Vision
       const imageSrc = webcamRef.current?.getScreenshot();
       if (!imageSrc) {
         throw new Error("Failed to capture image");
@@ -28,7 +64,9 @@ export default function Home() {
         setError(result.error);
       } else {
         setPrice(result.price);
-        setProduct(result.product || null);
+        if (result.product && !barcodeResult) {
+          setProduct(result.product);
+        }
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : "Scanning failed");
@@ -98,7 +136,7 @@ export default function Home() {
             </div>
           )}
 
-          {(price || product) && (
+          {(price || product || barcode) && (
             <div className="bg-white p-4 rounded-xl shadow-md space-y-2">
               {price && (
                 <div className="text-2xl font-mono font-bold text-gray-900">
@@ -106,6 +144,9 @@ export default function Home() {
                 </div>
               )}
               {product && <div className="text-gray-600">{product}</div>}
+              {barcode && !product && (
+                <div className="text-sm text-gray-500">Barcode: {barcode}</div>
+              )}
             </div>
           )}
         </div>

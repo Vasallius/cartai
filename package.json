@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@zxing/browser": "^0.1.5",
     "next": "15.1.6",
     "openai": "^4.80.1",
     "react": "^19.0.0",
